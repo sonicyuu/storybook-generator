@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{TITLE}}</title>
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --secondary: #8b5cf6;
+      --accent: #ec4899;
+      --bg-dark: #0f172a;
+      --bg-card: #1e293b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans SC', sans-serif; background: var(--bg-dark); min-height: 100vh; overflow: hidden; color: #f8fafc; }
+    .stars { position: fixed; inset: 0; background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%); z-index: -1; }
+    .book-app { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background: linear-gradient(to bottom, rgba(15,23,42,0.9), transparent); position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
+    .book-title { font-family: 'ZCOOL KuaiLe', cursive; font-size: 2em; background: linear-gradient(135deg, #fff, #a5b4fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .controls { display: flex; gap: 15px; align-items: center; }
+    .control-btn { width: 50px; height: 50px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); background: rgba(30,41,59,0.8); color: #fff; font-size: 1.3em; cursor: pointer; transition: all 0.3s; }
+    .control-btn:hover { background: var(--primary); transform: scale(1.1); }
+    .control-btn.active { background: var(--accent); border-color: var(--accent); }
+    .voice-indicator { display: flex; align-items: center; gap: 5px; font-size: 0.85em; color: #94a3b8; }
+    .voice-bars { display: flex; gap: 2px; align-items: flex-end; height: 16px; }
+    .voice-bar { width: 3px; background: #fff; border-radius: 2px; animation: voiceBar 0.5s ease infinite alternate; }
+    .voice-bar:nth-child(1) { height: 6px; animation-delay: 0s; }
+    .voice-bar:nth-child(2) { height: 10px; animation-delay: 0.1s; }
+    .voice-bar:nth-child(3) { height: 14px; animation-delay: 0.2s; }
+    .voice-bar:nth-child(4) { height: 10px; animation-delay: 0.3s; }
+    .voice-bar:nth-child(5) { height: 6px; animation-delay: 0.4s; }
+    @keyframes voiceBar { from { transform: scaleY(0.5); } to { transform: scaleY(1); } }
+    .book-stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 80px 60px 120px; }
+    .page-wrapper { position: relative; width: 100%; max-width: 1100px; aspect-ratio: 16/9; }
+    .cover { position: absolute; inset: 0; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 80px rgba(0,0,0,0.5); }
+    .cover img { width: 100%; height: 100%; object-fit: cover; }
+    .cover-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(15,23,42,0.7) 0%, rgba(15,23,42,0.3) 30%, transparent 60%); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; }
+    .cover-subtitle { font-size: 1.2em; color: rgba(255,255,255,0.6); letter-spacing: 8px; text-transform: uppercase; margin-bottom: 20px; }
+    .cover-title { font-family: 'ZCOOL KuaiLe', cursive; font-size: 4.5em; background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #c4b5fd 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.3; text-align: center; }
+    .cover-divider { width: 120px; height: 3px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent); margin: 25px auto; }
+    .cover-author { font-family: 'ZCOOL KuaiLe', cursive; font-size: 1.4em; color: rgba(255,255,255,0.8); margin-top: 15px; text-align: center; }
+    .cover-author span { color: #a5b4fc; font-weight: 500; }
+    .cover-date { font-family: 'ZCOOL KuaiLe', cursive; font-size: 1.2em; color: rgba(255,255,255,0.6); margin-top: 10px; letter-spacing: 2px; text-align: center; }
+    .content-page { position: absolute; inset: 0; border-radius: 20px; overflow: hidden; background: var(--bg-card); box-shadow: 0 25px 80px rgba(0,0,0,0.5); display: none; }
+    .content-page.active { display: block; animation: pageIn 0.6s ease forwards; }
+    @keyframes pageIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+    .page-image { width: 100%; height: 100%; position: relative; }
+    .page-image img { width: 100%; height: 100%; object-fit: cover; }
+    .text-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px 40px; background: linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.5) 60%, transparent 100%); }
+    .story-text { font-size: 1.2em; line-height: 1.9; color: #f1f5f9; text-align: center; }
+    .page-number { position: absolute; top: 20px; right: 25px; background: rgba(0,0,0,0.6); padding: 8px 18px; border-radius: 20px; font-size: 0.95em; color: #94a3b8; }
+    .nav-bar { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 30px; background: rgba(30,41,59,0.9); backdrop-filter: blur(20px); padding: 15px 35px; border-radius: 60px; border: 1px solid rgba(255,255,255,0.1); }
+    .nav-btn { width: 55px; height: 55px; border-radius: 50%; border: none; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; font-size: 1.4em; cursor: pointer; }
+    .nav-btn:hover:not(:disabled) { transform: scale(1.15); }
+    .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-dots { display: flex; gap: 8px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: all 0.3s; }
+    .dot.active { width: 30px; border-radius: 5px; background: linear-gradient(90deg, var(--primary), var(--accent)); }
+    .progress { position: fixed; bottom: 0; left: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent)); }
+    @media (max-width: 768px) { .book-title { font-size: 1.5em; } .cover-title { font-size: 2em; } .story-text { font-size: 1em; } }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+  <div class="book-app">
+    <div class="top-bar">
+      <h1 class="book-title">{{TITLE}}</h1>
+      <div class="controls">
+        <button class="control-btn" id="voiceBtn" onclick="toggleVoice()" title="语音朗读">🔊</button>
+        <button class="control-btn" id="musicBtn" onclick="toggleMusic()" title="背景音乐">🎵</button>
+        <button class="control-btn" onclick="toggleFullscreen()" title="全屏">⛶</button>
+      </div>
+    </div>
+    <div class="book-stage">
+      <div class="page-wrapper">
+        <div class="cover" id="cover">
+          <img src="images/cover.png" alt="封面">
+          <div class="cover-overlay">
+            <p class="cover-subtitle">绘本故事</p>
+            <h1 class="cover-title">{{TITLE}}</h1>
+            <div class="cover-divider"></div>
+            <p class="cover-author">作者 <span>{{AUTHOR}}</span></p>
+            <p class="cover-date">{{DATE}}</p>
+          </div>
+        </div>
+        <div id="contentPages"></div>
+      </div>
+    </div>
+    <div class="nav-bar">
+      <button class="nav-btn" id="prevBtn" onclick="prevPage()">◀</button>
+      <div class="page-dots" id="pageDots"></div>
+      <button class="nav-btn" id="nextBtn" onclick="nextPage()">▶</button>
+    </div>
+    <div class="progress" id="progress"></div>
+  </div>
+  <audio id="bgMusic" loop><source src="music/background.mp3" type="audio/mpeg"></audio>
+  <audio id="voiceAudio" onended="onVoiceEnded()"><source id="voiceSource" type="audio/mpeg"></audio>
+  <script>
+    // pages 数组由 build_html.py 注入完整数据（含 voice_segments）
+    const PAGES_DATA = {{PAGES_JSON}};
+
+    let currentPage = 0;
+    let isCover = true;
+    let musicPlaying = false;
+    let voiceEnabled = false;
+    let currentSegmentIndex = 0;
+    let currentSegments = [];
+    let voiceAudio = null;
+
+    // ── 初始化 ─────────────────────────────────────────────────
+    function renderPages() {
+      const bgMusic = document.getElementById('bgMusic');
+      bgMusic.volume = 0.1;  // 背景音乐固定为系统音量 10%
+      bgMusic.load();
+
+      // 初始化 voiceAudio
+      voiceAudio = document.getElementById('voiceAudio');
+      if (voiceAudio) {
+        voiceAudio.volume = 1.0;  // 朗读音量跟随系统
+        voiceAudio.load();
+      }
+
+      PAGES_DATA.forEach((page, index) => {
+        const el = document.createElement('div');
+        el.className = 'content-page';
+        el.id = 'page_' + index;
+        el.innerHTML = '<div class="page-image"><img src="'+page.image+'" alt="page'+(index+1)+'"><span class="page-number">'+(index+1)+' / '+PAGES_DATA.length+'</span><div class="text-overlay"><p class="story-text">'+escapeHtml(page.text)+'</p></div></div>';
+        document.getElementById('contentPages').appendChild(el);
+
+        const dot = document.createElement('div');
+        dot.className = 'dot' + (index===0?' active':'');
+        dot.onclick = () => goToPage(index);
+        document.getElementById('pageDots').appendChild(dot);
+      });
+      voiceAudio = document.getElementById('voiceAudio');
+    }
+
+    function updatePage() {
+      if (isCover) {
+        document.getElementById('cover').style.display = 'block';
+        document.querySelectorAll('.content-page').forEach(p => p.classList.remove('active'));
+      } else {
+        document.getElementById('cover').style.display = 'none';
+        document.querySelectorAll('.content-page').forEach((p,i) => p.classList.toggle('active', i===currentPage));
+      }
+      document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===currentPage && !isCover));
+      document.getElementById('progress').style.width = (isCover?0:((currentPage+1)/PAGES_DATA.length)*100) + '%';
+      document.getElementById('prevBtn').disabled = isCover;
+      document.getElementById('nextBtn').disabled = !isCover && currentPage === PAGES_DATA.length-1;
+
+      // 切换页面后自动播放语音
+      if (voiceEnabled && !isCover) {
+        playPageVoice(currentPage);
+      }
+    }
+
+    // ── 语音播放（使用 MP3 文件）────────────────────────────────
+    function playPageVoice(pageIndex) {
+      const page = PAGES_DATA[pageIndex];
+      if (!page || !page.voice_segments || page.voice_segments.length === 0) return;
+      currentSegments = page.voice_segments;
+      currentSegmentIndex = 0;
+      playNextSegment();
+    }
+
+    function playNextSegment() {
+      if (currentSegmentIndex >= currentSegments.length) {
+        updateVoiceIndicator(false);
+        return;
+      }
+      var segment = currentSegments[currentSegmentIndex];
+      if (!segment || !segment.file) {
+        currentSegmentIndex++;
+        playNextSegment();
+        return;
+      }
+
+      // 设置 src → 注册监听器 → load() → canplay → play()
+      voiceAudio.src = segment.file;
+      voiceAudio.addEventListener('canplay', function onCanPlay() {
+        voiceAudio.removeEventListener('canplay', onCanPlay);
+        voiceAudio.play().catch(function(err) {
+          console.warn('音频播放失败:', err);
+          currentSegmentIndex++;
+          playNextSegment();
+        });
+        updateVoiceIndicator(true);
+      }, { once: true });
+      voiceAudio.load();
+    }
+
+    function onVoiceEnded() {
+      currentSegmentIndex++;
+      if (currentSegmentIndex < currentSegments.length) {
+        playNextSegment();
+      } else {
+        updateVoiceIndicator(false);
+      }
+    }
+
+    // ── 翻页 ─────────────────────────────────────────────────
+    function nextPage() {
+      stopVoice();
+      if(isCover){isCover=false;currentPage=0}else if(currentPage<PAGES_DATA.length-1)currentPage++;
+      updatePage();
+    }
+
+    function prevPage() {
+      stopVoice();
+      if(!isCover){if(currentPage===0)isCover=true;else currentPage--;}
+      updatePage();
+    }
+
+    function goToPage(index) {
+      stopVoice();
+      isCover=false; currentPage=index;
+      updatePage();
+    }
+
+    // ── 工具 ─────────────────────────────────────────────────
+    function toggleFullscreen() {
+      document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
+    }
+
+    function toggleMusic() {
+      if(musicPlaying) bgMusic.pause();
+      else bgMusic.play();
+      musicPlaying=!musicPlaying;
+      document.getElementById('musicBtn').classList.toggle('active', musicPlaying);
+    }
+
+    function toggleVoice() {
+      voiceEnabled = !voiceEnabled;
+      document.getElementById('voiceBtn').classList.toggle('active', voiceEnabled);
+      if (voiceEnabled && !isCover) {
+        playPageVoice(currentPage);
+      } else {
+        stopVoice();
+      }
+    }
+
+    function stopVoice() {
+      if (!voiceAudio) return;
+      voiceAudio.pause();
+      voiceAudio.currentTime = 0;
+      currentSegmentIndex = 0;
+      currentSegments = [];
+      updateVoiceIndicator(false);
+    }
+
+    function updateVoiceIndicator(playing) {
+      const btn = document.getElementById('voiceBtn');
+      if (playing) {
+        btn.innerHTML = '<div class="voice-indicator"><div class="voice-bars"><div class="voice-bar"></div><div class="voice-bar"></div><div class="voice-bar"></div><div class="voice-bar"></div><div class="voice-bar"></div></div></div>';
+      } else {
+        btn.innerHTML = '🔊';
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // 键盘 + 触屏
+    document.addEventListener('keydown', e => {
+      if(e.key==='ArrowRight'||e.key===' ') nextPage();
+      else if(e.key==='ArrowLeft') prevPage();
+    });
+    document.addEventListener('touchstart', e => window.touchX = e.touches[0].clientX);
+    document.addEventListener('touchend', e => {
+      if(Math.abs(window.touchX - e.changedTouches[0].clientX) > 50)
+        (window.touchX > e.changedTouches[0].clientX ? nextPage() : prevPage());
+    });
+
+    renderPages(); updatePage();
+  </script>
+</body>
+</html>
